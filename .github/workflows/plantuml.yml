@@ -1,0 +1,71 @@
+name: PlantUML diagrams
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'designs/**.puml'
+      - '.github/workflows/plantuml.yml'
+  pull_request:
+    paths:
+      - 'designs/**.puml'
+      - '.github/workflows/plantuml.yml'
+
+permissions:
+  contents: read
+
+env:
+  PLANTUML_VERSION: '1.2024.7'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    # Needed only to push re-rendered PNGs back to main; pull requests never push.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download PlantUML
+        run: |
+          curl -sSfL -o /tmp/plantuml.jar \
+            "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar"
+
+      - name: Render diagrams
+        run: java -jar /tmp/plantuml.jar -failfast2 -tpng "designs/"*.puml
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet -- 'designs/*.png'; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat -- 'designs/*.png'
+          fi
+
+      - name: Fail if PNGs are stale (pull request)
+        if: github.event_name == 'pull_request' && steps.diff.outputs.changed == 'true'
+        run: |
+          echo "::error::Rendered PNGs differ from the committed ones. Re-render designs/*.puml with PlantUML and commit the updated PNGs."
+          exit 1
+
+      - name: Commit updated PNGs (main)
+        if: github.event_name == 'push' && steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add designs/*.png
+          git commit -m 'chore(designs): re-render PlantUML diagrams'
+          git push

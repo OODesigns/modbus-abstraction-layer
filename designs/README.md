@@ -4,10 +4,28 @@ PlantUML designs for the Java Modbus abstraction layer with a **plugin architect
 
 | Diagram | Purpose |
 |---|---|
-| `01 Modbus Abstraction.puml` | `ModbusClient` interface, TCP/RTU factories, connection-manager decorator, library adapters |
-| `02 Device Plugin Architecture.puml` | `DevicePlugin` SPI, `DeviceFactory` with ServiceLoader discovery, example plugins as separate jars |
-| `03 Device Runtime and Transformers.puml` | Polling base device, state management, response transformer strategies |
-| `04 Plugin Discovery Sequence.puml` | Startup discovery and device creation flow |
+| [`01 Modbus Abstraction.puml`](01%20Modbus%20Abstraction.puml) ([PNG](01%20Modbus%20Abstraction.png)) | `ModbusClient` interface, TCP/RTU factories, connection-manager decorator, library adapters |
+| [`02 Device Plugin Architecture.puml`](02%20Device%20Plugin%20Architecture.puml) ([PNG](02%20Device%20Plugin%20Architecture.png)) | `DevicePlugin` SPI, `DeviceFactory` with ServiceLoader discovery, example plugins as separate jars |
+| [`03 Device Runtime and Transformers.puml`](03%20Device%20Runtime%20and%20Transformers.puml) ([PNG](03%20Device%20Runtime%20and%20Transformers.png)) | Polling base device, state management, response transformer strategies |
+| [`04 Plugin Discovery Sequence.puml`](04%20Plugin%20Discovery%20Sequence.puml) ([PNG](04%20Plugin%20Discovery%20Sequence.png)) | Startup discovery and device creation flow |
+
+## Diagrams
+
+### 01 Modbus Abstraction
+
+![Modbus Abstraction](01%20Modbus%20Abstraction.png)
+
+### 02 Device Plugin Architecture
+
+![Device Plugin Architecture](02%20Device%20Plugin%20Architecture.png)
+
+### 03 Device Runtime and Transformers
+
+![Device Runtime and Transformers](03%20Device%20Runtime%20and%20Transformers.png)
+
+### 04 Plugin Discovery Sequence
+
+![Plugin Discovery Sequence](04%20Plugin%20Discovery%20Sequence.png)
 
 ## Key decisions
 
@@ -18,4 +36,21 @@ PlantUML designs for the Java Modbus abstraction layer with a **plugin architect
 
 ## Rendering
 
-Use any PlantUML renderer, e.g. `plantuml designs/*.puml` or the IntelliJ/VS Code PlantUML plugin.
+PNGs live next to their sources in this folder (`designs/NN Name.png`) and are the rendered
+output of the matching `.puml` file — edit the `.puml`, never the `.png`.
+
+Render locally with Graphviz installed and the PlantUML jar (1.2024.7 or newer, which bundles
+the `spacelab` theme so no network access is required):
+
+```bash
+java -jar plantuml.jar -failfast2 -tpng "designs/"*.puml
+```
+
+The `plantuml` package shipped by older distributions (e.g. 1.2020.02) does not bundle the
+`spacelab` theme and will fail to render; use the jar from the
+[PlantUML releases](https://github.com/plantuml/plantuml/releases) instead. The IntelliJ/VS Code
+PlantUML plugins work too.
+
+The [`PlantUML diagrams` workflow](../.github/workflows/plantuml.yml) re-renders the diagrams
+whenever a `designs/*.puml` file changes: it fails a pull request whose PNGs are stale, and
+commits the refreshed PNGs when the change lands on `main`.
