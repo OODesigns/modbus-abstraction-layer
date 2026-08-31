@@ -1,0 +1,67 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+
+title Device Runtime — Polling, State & Response Transformers (Java)
+
+abstract class AbstractModbusDevice {
+  #client: ModbusClient
+  #stateManager: StateManager
+  +start(): CompletableFuture<Void>
+  +stop(): void
+  #{abstract} readData(): CompletableFuture<Response<DeviceState>>
+  -pollData(interval: Duration): void
+}
+note right of AbstractModbusDevice
+  Java equivalent of the POC's MVHR base:
+  connect -> mark RUNNING -> poll loop.
+  On failure: mark stopped + record
+  triggered rule (START_FAILURE)
+end note
+
+interface Device {}
+class StateManager {
+  +updateState(operational: Map, triggeredRules: Map): void
+}
+
+interface ResponseTransformer<R, V> {
+  +transform(raw: Response<R>): Response<V>
+}
+note bottom of ResponseTransformer
+  Strategy pattern: converts raw register
+  values into typed domain values.
+  Transformers self-register into the
+  factory via ServiceLoader too —
+  new sensor types need no core changes.
+end note
+
+class ResponseTransformerFactory {
+  +forSensor(type: SensorType): Response<ResponseTransformer>
+}
+
+class TemperatureTransformer {}
+class TemperatureCelsius {
+  +value: double
+}
+note right of TemperatureCelsius
+  Typed value object with range
+  validation (Low/HighTemperatureRange)
+end note
+
+class ExceptionCascadeStrategy {}
+note bottom of ExceptionCascadeStrategy
+  If an upstream Response is EXCEPTION,
+  cascade it unchanged down the
+  validation/transform chain
+  (as in the Python POC)
+end note
+
+AbstractModbusDevice ..|> Device
+AbstractModbusDevice -- StateManager
+AbstractModbusDevice ..> ResponseTransformerFactory : gets transformer from
+ResponseTransformerFactory o-- ResponseTransformer : discovers via ServiceLoader
+TemperatureTransformer ..|> ResponseTransformer
+TemperatureTransformer ..> TemperatureCelsius : produces
+TemperatureTransformer -- ExceptionCascadeStrategy
+
+@enduml

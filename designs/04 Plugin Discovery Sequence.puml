@@ -1,0 +1,38 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+!theme spacelab
+
+title Startup & Device Creation — Self-Registration Flow
+
+participant "System" as Sys
+participant "DeviceFactory" as DF
+participant "ServiceLoader" as SL
+participant "BlaubergMVHRPlugin" as Plugin
+participant "ModbusClientRegistry" as MCR
+participant "BlaubergMVHR\n(Device)" as Dev
+
+== Startup: discovery (no central registration code) ==
+Sys -> DF : new DeviceFactory(configFactory)
+DF -> SL : load(DevicePlugin.class)
+SL --> DF : [BlaubergMVHRPlugin, ModbusTempSensorPlugin, ...]
+note over DF : plugins map keyed by deviceType()\nDropping a new jar on the classpath\nis all it takes to add a device
+
+DF -> SL : load(ModbusClientFactory.class)
+SL --> MCR : [TcpFactory, RtuFactory]
+
+== Runtime: create a device ==
+Sys -> DF : createDevice("blauberg_mvhr")
+DF -> DF : validate registered + requiredDependencies()
+alt not registered or missing dependency
+  DF --> Sys : DeviceResponse(EXCEPTION, details)
+else ok
+  DF -> Plugin : create(configLoader, dependencies)
+  Plugin -> MCR : get(TCP, connectionSettings)
+  MCR --> Plugin : Response<ModbusClient>\n(wrapped in ConnectionManager)
+  Plugin --> DF : device
+  DF --> Sys : DeviceResponse(VALID, device)
+  Sys -> Dev : start()
+  Dev -> Dev : connect + poll loop
+end
+
+@enduml
