@@ -12,7 +12,7 @@ on:
       - '.github/workflows/plantuml.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   PLANTUML_VERSION: '1.2024.7'
@@ -20,6 +20,9 @@ env:
 jobs:
   render:
     runs-on: ubuntu-latest
+    # Needed only to push re-rendered PNGs back to main; pull requests never push.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
