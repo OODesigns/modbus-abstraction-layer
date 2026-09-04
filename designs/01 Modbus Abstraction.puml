@@ -2,7 +2,7 @@
 'https://plantuml.com/class-diagram
 !theme spacelab
 
-title Modbus Abstraction Layer (Java)
+title Modbus Abstraction Layer
 
 interface ModbusClient {
   +connect(): CompletableFuture<Response<Void>>
@@ -26,10 +26,9 @@ interface ModbusClientFactory {
   +create(settings: ConnectionSettings): ModbusClient
 }
 note bottom of ModbusClientFactory
-  SPI: implementations self-register via
-  Java ServiceLoader (META-INF/services).
-  Adding a new transport or library binding
-  requires NO change to existing code.
+  Provider contract for transport adapters.
+  Implementations are supplied to the provider
+  registry without changing the core model.
 end note
 
 enum TransportType {
@@ -42,9 +41,8 @@ class ModbusClientRegistry {
   +get(transport: TransportType, settings: ConnectionSettings): Response<ModbusClient>
 }
 note bottom of ModbusClientRegistry
-  Discovers all ModbusClientFactory
-  implementations at startup using
-  ServiceLoader.load(ModbusClientFactory.class)
+  Resolves transport providers from the
+  configured provider catalog.
 end note
 
 class ConnectionSettings {
@@ -69,8 +67,8 @@ end note
 
 class DigitalPetriTcpClient {}
 note bottom of DigitalPetriTcpClient
-  Adapter over the digitalpetri/modbus
-  Java library. Registered via ServiceLoader.
+  Adapter over a Modbus protocol library.
+  Supplied as a transport provider.
 end note
 
 class DigitalPetriRtuClient {}
@@ -86,7 +84,7 @@ enum Status {
   EXCEPTION
 }
 
-ModbusClientRegistry o-- ModbusClientFactory : discovers via ServiceLoader
+ModbusClientRegistry o-- ModbusClientFactory : resolves from provider catalog
 ModbusClientFactory ..> ModbusClient : creates
 ModbusClientFactory ..> ConnectionSettings : configured by
 ModbusClientFactory -- TransportType

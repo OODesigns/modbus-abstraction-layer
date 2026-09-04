@@ -2,7 +2,7 @@
 'https://plantuml.com/class-diagram
 !theme spacelab
 
-title Device Runtime — Polling, State & Response Transformers (Java)
+title Device Runtime — Polling, State & Response Transformers
 
 abstract class AbstractModbusDevice {
   #client: ModbusClient
@@ -13,7 +13,7 @@ abstract class AbstractModbusDevice {
   -pollData(interval: Duration): void
 }
 note right of AbstractModbusDevice
-  Java equivalent of the POC's MVHR base:
+  Equivalent of the POC's MVHR base:
   connect -> mark RUNNING -> poll loop.
   On failure: mark stopped + record
   triggered rule (START_FAILURE)
@@ -30,9 +30,8 @@ interface ResponseTransformer<R, V> {
 note bottom of ResponseTransformer
   Strategy pattern: converts raw register
   values into typed domain values.
-  Transformers self-register into the
-  factory via ServiceLoader too —
-  new sensor types need no core changes.
+  New transformer providers are supplied to
+  the factory without core changes.
 end note
 
 class ResponseTransformerFactory {
@@ -59,7 +58,7 @@ end note
 AbstractModbusDevice ..|> Device
 AbstractModbusDevice -- StateManager
 AbstractModbusDevice ..> ResponseTransformerFactory : gets transformer from
-ResponseTransformerFactory o-- ResponseTransformer : discovers via ServiceLoader
+ResponseTransformerFactory o-- ResponseTransformer : resolves from provider catalog
 TemperatureTransformer ..|> ResponseTransformer
 TemperatureTransformer ..> TemperatureCelsius : produces
 TemperatureTransformer -- ExceptionCascadeStrategy

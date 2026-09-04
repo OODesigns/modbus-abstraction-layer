@@ -2,7 +2,7 @@
 'https://plantuml.com/class-diagram
 !theme spacelab
 
-title Device Plugin Architecture — Self-Registering Devices (Java)
+title Device Plugin Architecture — Extensible Devices
 
 interface Device {
   +open(): CompletableFuture<Response<Void>>
@@ -16,11 +16,10 @@ interface DevicePlugin {
   +create(config: ConfigLoader, deps: Dependencies): Device
 }
 note right of DevicePlugin
-  THE plugin SPI.
-  Each new device ships as a self-contained
-  module (jar) providing this interface and a
-  META-INF/services entry — the core framework
-  and existing devices are NEVER modified.
+  Provider contract for device extensions.
+  Each new device is supplied as an independent
+  extension — the core framework and existing
+  devices are NEVER modified.
   (Open/Closed Principle)
 end note
 
@@ -30,8 +29,8 @@ class DeviceFactory {
   +createDevice(type: DeviceType): DeviceResponse
 }
 note bottom of DeviceFactory
-  At startup:
-  ServiceLoader.load(DevicePlugin.class)
+  At startup, receives device providers from
+  the configured provider catalog.
   Validates requiredDependencies() before
   creation — mirrors the Python POC's
   DeviceFactory behaviour:
@@ -56,6 +55,10 @@ class Dependencies {
   +get(key: DependencyKey): Response<Object>
 }
 
+class ProviderCatalog {
+  +deviceProviders(): Collection<DevicePlugin>
+}
+
 class ConfigFactory {}
 class ConfigLoader {}
 note bottom of ConfigLoader
@@ -65,17 +68,18 @@ note bottom of ConfigLoader
 end note
 
 ' ---- Example plugins (each in its own module) ----
-package "plugin: blauberg-mvhr (own jar)" {
+package "extension: blauberg-mvhr" {
   class BlaubergMVHRPlugin {}
   class BlaubergMVHR {}
 }
 
-package "plugin: modbus-temp-sensor (own jar)" {
+package "extension: modbus-temp-sensor" {
   class ModbusTempSensorPlugin {}
   class ModbusTemperatureSensor {}
 }
 
-DeviceFactory o-- DevicePlugin : discovers via ServiceLoader
+DeviceFactory o-- ProviderCatalog : obtains device providers from
+ProviderCatalog o-- DevicePlugin
 DeviceFactory -- ConfigFactory
 DeviceFactory ..> DeviceResponse : returns
 DeviceResponse -- DeviceStatus
