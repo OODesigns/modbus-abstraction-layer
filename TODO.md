@@ -32,7 +32,7 @@ Tracking list for implementing the core Modbus abstraction layer. Task session: 
 
 ## 3. Device plugin architecture (diagram 02)
 
-- [ ] `Device` interface (open/read/close)
+- [ ] `Device` interface (open/read query/execute command/close)
 - [ ] `DevicePlugin` provider contract (`deviceType()`, `requiredDependencies()`, `create(config, deps)`)
 - [ ] `DeviceFactory`: provider-catalog discovery, dependency validation, NOT_REGISTERED / missing-dependency failure Responses
 - [ ] `Dependencies`, `ConfigFactory`, `ConfigLoader` (JSON device profiles)

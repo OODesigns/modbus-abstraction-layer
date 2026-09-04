@@ -32,6 +32,8 @@ PlantUML designs for a Modbus abstraction layer with a **provider architecture**
 - **Provider registration** is an architectural boundary. The runtime receives device, transport, and transformer providers from a provider catalog; the catalog's discovery mechanism is an implementation detail.
 - A Java deployment may implement the provider catalog with `ServiceLoader`, dependency injection, explicit configuration, or another mechanism. That choice does not belong in the domain design.
 - **`ModbusClient`** is the only Modbus API devices see. The underlying library (e.g. digitalpetri/modbus) sits behind an adapter, so it can be swapped without touching device code — same role `ModbusPYClient`/pymodbus played in the POC.
+- **Device writes are intent-driven.** A caller sends a typed `DeviceCommand` such as `SetPower` or `SetFanSpeed`; the device translates that intent into protocol-level coil/register writes. Callers do not address Modbus registers directly.
+- **Device reads are query-driven.** A caller sends a typed `DeviceQuery` such as `ReadTemperatures` or `ReadAlarms`; `ReadSnapshot` is an explicit query when a complete state view is needed. The device chooses the required protocol reads and callers never address registers directly.
 - **`Response<T>` / `DeviceResponse`** carry status + details instead of throwing, mirroring the POC's `Response`/`DeviceStatus` pattern, including the exception-cascade strategy.
 - **Dependency validation**: `DevicePlugin.requiredDependencies()` is checked before creation, matching the POC `DeviceFactory` tests (not registered / missing dependency / valid).
 

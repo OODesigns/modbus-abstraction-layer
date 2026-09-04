@@ -6,9 +6,29 @@ title Device Plugin Architecture — Extensible Devices
 
 interface Device {
   +open(): CompletableFuture<Response<Void>>
-  +read(): CompletableFuture<Response<DeviceState>>
+  +read(query: DeviceQuery): CompletableFuture<Response<DeviceState>>
+  +execute(command: DeviceCommand): CompletableFuture<Response<Void>>
   +close(): void
 }
+
+interface DeviceQuery
+note right of DeviceQuery
+  Intent-driven read request. The device maps
+  the query to the required protocol operations.
+  Examples for MVHR: ReadSnapshot,
+  ReadTemperatures, ReadAirQuality, ReadAlarms.
+  A snapshot is explicit, not an accidental
+  consequence of calling read without parameters.
+end note
+
+interface DeviceCommand
+note right of DeviceCommand
+  Intent-driven operation requested by a caller.
+  Commands are device-specific and are translated
+  by the device into protocol-level writes.
+  Examples for MVHR: SetPower, SetFanSpeed,
+  SetTemperature, ResetFilterTimer.
+end note
 
 interface DevicePlugin {
   +deviceType(): DeviceType
@@ -84,6 +104,8 @@ DeviceFactory -- ConfigFactory
 DeviceFactory ..> DeviceResponse : returns
 DeviceResponse -- DeviceStatus
 DevicePlugin ..> Device : creates
+Device ..> DeviceCommand : accepts
+Device ..> DeviceQuery : accepts
 DevicePlugin ..> Dependencies : receives
 DevicePlugin ..> ConfigLoader : receives
 

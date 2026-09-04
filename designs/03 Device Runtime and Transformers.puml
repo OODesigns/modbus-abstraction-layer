@@ -9,12 +9,12 @@ abstract class AbstractModbusDevice {
   #stateManager: StateManager
   +start(): CompletableFuture<Void>
   +stop(): void
-  #{abstract} readData(): CompletableFuture<Response<DeviceState>>
+  #{abstract} readData(query: DeviceQuery): CompletableFuture<Response<DeviceState>>
   -pollData(interval: Duration): void
 }
 note right of AbstractModbusDevice
   Equivalent of the POC's MVHR base:
-  connect -> mark RUNNING -> poll loop.
+  connect -> mark RUNNING -> configured query poll loop.
   On failure: mark stopped + record
   triggered rule (START_FAILURE)
 end note
