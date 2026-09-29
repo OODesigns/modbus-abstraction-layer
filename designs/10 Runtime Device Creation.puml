@@ -1,0 +1,33 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+!theme spacelab
+
+title Runtime — Device Creation & Start
+
+participant "System" as Sys
+participant "DeviceFactory" as DF
+participant "BlaubergMVHRPlugin" as Plugin
+participant "CommunicationClientRegistry" as MCR
+participant "BlaubergMVHR\n(Device)" as Dev
+
+note over Sys, Dev
+  Assumes provider registration already
+  happened (see 09 Startup Provider
+  Registration).
+end note
+
+Sys -> DF : createDevice("blauberg_mvhr")
+DF -> DF : validate registered + requiredDependencies()
+alt not registered or missing dependency
+  DF --> Sys : DeviceResponse(EXCEPTION, details)
+else ok
+  DF -> Plugin : create(configLoader, dependencies)
+  Plugin -> MCR : get(modbusTcpTransport, connectionSettings)
+  MCR --> Plugin : Response<CommunicationClient>\n(wrapped in ConnectionManager)
+  Plugin --> DF : device
+  DF --> Sys : DeviceResponse(VALID, device)
+  Sys -> Dev : start()
+  Dev -> Dev : connect + poll loop
+end
+
+@enduml

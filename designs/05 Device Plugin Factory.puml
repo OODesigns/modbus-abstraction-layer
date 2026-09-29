@@ -2,32 +2,18 @@
 'https://plantuml.com/class-diagram
 !theme spacelab
 
-title Device Plugin Architecture — Extensible Devices
+title Device Plugin Factory — Provider Registration
 
 interface Device {
-  +open(): CompletableFuture<Response<Void>>
-  +read(query: DeviceQuery): CompletableFuture<Response<DeviceState>>
-  +execute(command: DeviceCommand): CompletableFuture<Response<Void>>
-  +close(): void
 }
-
-interface DeviceQuery
-note right of DeviceQuery
-  Intent-driven read request. The device maps
-  the query to the required protocol operations.
-  Examples for MVHR: ReadSnapshot,
-  ReadTemperatures, ReadAirQuality, ReadAlarms.
-  A snapshot is explicit, not an accidental
-  consequence of calling read without parameters.
+note right of Device
+  Defined in 04 Device Contract.
 end note
 
-interface DeviceCommand
-note right of DeviceCommand
-  Intent-driven operation requested by a caller.
-  Commands are device-specific and are translated
-  by the device into protocol-level writes.
-  Examples for MVHR: SetPower, SetFanSpeed,
-  SetTemperature, ResetFilterTimer.
+interface CommunicationClientRegistry {
+}
+note right of CommunicationClientRegistry
+  Defined in 02 Connection Provisioning.
 end note
 
 interface DevicePlugin {
@@ -71,9 +57,14 @@ enum DeviceStatus {
 }
 
 class Dependencies {
-  +modbusRegistry(): ModbusClientRegistry
+  +communicationRegistry(): CommunicationClientRegistry
   +get(key: DependencyKey): Response<Object>
 }
+note bottom of Dependencies
+  Devices depend on the protocol-neutral
+  CommunicationClientRegistry, never on a
+  specific protocol.
+end note
 
 class ProviderCatalog {
   +deviceProviders(): Collection<DevicePlugin>
@@ -87,34 +78,20 @@ note bottom of ConfigLoader
   and which dependencies to use
 end note
 
-' ---- Example plugins (each in its own module) ----
-package "extension: blauberg-mvhr" {
-  class BlaubergMVHRPlugin {}
-  class BlaubergMVHR {}
-}
-
-package "extension: modbus-temp-sensor" {
-  class ModbusTempSensorPlugin {}
-  class ModbusTemperatureSensor {}
-}
-
 DeviceFactory o-- ProviderCatalog : obtains device providers from
 ProviderCatalog o-- DevicePlugin
 DeviceFactory -- ConfigFactory
 DeviceFactory ..> DeviceResponse : returns
 DeviceResponse -- DeviceStatus
 DevicePlugin ..> Device : creates
-Device ..> DeviceCommand : accepts
-Device ..> DeviceQuery : accepts
 DevicePlugin ..> Dependencies : receives
 DevicePlugin ..> ConfigLoader : receives
+Dependencies ..> CommunicationClientRegistry : exposes
 
-BlaubergMVHRPlugin ..|> DevicePlugin
-BlaubergMVHRPlugin ..> BlaubergMVHR : creates
-BlaubergMVHR ..|> Device
-
-ModbusTempSensorPlugin ..|> DevicePlugin
-ModbusTempSensorPlugin ..> ModbusTemperatureSensor : creates
-ModbusTemperatureSensor ..|> Device
+note as N1
+  Concrete plugins (BlaubergMVHRPlugin,
+  RelayPlugin, ...) are shown in
+  06 Example Device Extensions.
+end note
 
 @enduml

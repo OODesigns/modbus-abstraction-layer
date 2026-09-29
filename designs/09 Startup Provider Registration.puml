@@ -1,0 +1,25 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+!theme spacelab
+
+title Startup — Provider Registration Flow
+
+participant "System" as Sys
+participant "DeviceFactory" as DF
+participant "Provider Catalog" as PC
+participant "CommunicationClientRegistry" as MCR
+
+Sys -> DF : new DeviceFactory(configFactory)
+DF -> PC : device providers()
+PC --> DF : [BlaubergMVHRPlugin, RelayPlugin, ...]
+note over DF : providers indexed by deviceType()\nAdding an extension is all it takes\nto introduce a new device
+
+MCR -> PC : transport providers()
+PC --> MCR : [ModbusTcpFactory, ModbusRtuFactory, ...]
+
+note over Sys, MCR
+  See 10 Runtime Device Creation for what
+  happens when a device is actually requested.
+end note
+
+@enduml

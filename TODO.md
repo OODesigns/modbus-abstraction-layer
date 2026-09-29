@@ -1,6 +1,6 @@
 # Implementation TODO — Core Design (from `designs/` diagrams)
 
-Tracking list for implementing the core Modbus abstraction layer. Task session: https://github.com/OODesigns/modbus-abstraction-layer/tasks/2837b062-e445-454e-ba28-3154880ed26b
+Tracking list for implementing the core device communication abstraction layer. Task session: https://github.com/OODesigns/modbus-abstraction-layer/tasks/2837b062-e445-454e-ba28-3154880ed26b
 
 ## Design rules (apply everywhere)
 
@@ -15,38 +15,40 @@ Tracking list for implementing the core Modbus abstraction layer. Task session: 
 
 - [x] `Response<T>` sealed Success/Failure with `status`, `details`, `value` + `map`/`flatMap`/`fold`
 - [x] Exception-cascade behaviour: failure Responses pass through chains unchanged
-- [ ] Value objects with construction-time validation:
-  - [ ] `IPAddress`, `Port`, `SerialPortName`, `BaudRate`, `UnitId`, `Timeout`, `Retries`
-  - [ ] Modbus `StartAddress` (0–65535), `RegisterCount` (1–125), `CoilCount` (1–2000)
-  - [ ] `DeviceType`, `DependencyKey`, `SensorType`
-  - [ ] `TemperatureCelsius` with low/high range validation
+- [x] Value objects with construction-time validation:
+  - [x] `IPAddress`, `Port`, `SerialPortName`, `BaudRate`, `UnitId`, `Timeout`, `Retries`
+  - [x] Modbus `StartAddress` (0–65535), `RegisterCount` (1–125), `CoilCount` (1–2000)
+  - [x] `DeviceType`, `DependencyKey`, `SensorType`
+  - [x] `TemperatureCelsius` with low/high range validation
 
-## 2. Modbus abstraction (diagram 01)
+## 2. Communication client core & provisioning (diagrams 01–03)
 
-- [ ] `ModbusClient` interface (connect, read/write coils & registers, isConnected)
-- [ ] `TransportType` enum (TCP, RTU)
-- [ ] `ModbusClientFactory` provider contract + provider-catalog discovery
-- [ ] `ModbusClientRegistry` returning `Response<ModbusClient>` (failure when transport not registered)
-- [ ] `ConnectionSettings` composed only of value objects
-- [ ] `ConnectionManager` decorator: retry/reconnect honouring `Retries`/`Timeout`
+- [x] `PointAddress<T>` (opaque handle) and `PointSnapshot` (typed read results)
+- [x] `CommunicationClient` interface (connect, read(points), write(point, value), isConnected)
+- [x] `CommunicationClientFactory` provider contract + provider-catalog discovery, keyed by `TransportKey`
+- [x] `CommunicationClientRegistry` returning `Response<CommunicationClient>` (failure when transport not registered)
+- [x] `ConnectionSettings` sealed hierarchy: `NetworkEndpoint` (host/port/timeout) and `SerialEndpoint` (port/baud/timeout) shared across protocol adapters, composed only of value objects
+- [x] `ConnectionManager` decorator: retry/reconnect honouring `Retries`/`Timeout`
+- [x] `adapter: modbus` package: `ModbusPointAddress` (CoilPoint/DiscreteInputPoint/HoldingRegisterPoint/InputRegisterPoint), Modbus `TransportKey`s, digitalpetri-backed `CommunicationClient` implementations
 
-## 3. Device plugin architecture (diagram 02)
+## 3. Device contract & plugin factory (diagrams 04–06)
 
-- [ ] `Device` interface (open/read query/execute command/close)
-- [ ] `DevicePlugin` provider contract (`deviceType()`, `requiredDependencies()`, `create(config, deps)`)
-- [ ] `DeviceFactory`: provider-catalog discovery, dependency validation, NOT_REGISTERED / missing-dependency failure Responses
-- [ ] `Dependencies`, `ConfigFactory`, `ConfigLoader` (JSON device profiles)
+- [x] `Device` interface (open/read query/execute command/close)
+- [x] `DevicePlugin` provider contract (`deviceType()`, `requiredDependencies()`, `create(config, deps)`)
+- [x] `DeviceFactory`: provider-catalog discovery, dependency validation, NOT_REGISTERED / missing-dependency failure Responses
+- [x] `Dependencies` (`communicationRegistry()`), `ConfigFactory`, `ConfigLoader` (JSON device profiles)
 
-## 4. Device runtime & transformers (diagram 03)
+## 4. Device composable behaviors & transformers (diagrams 07–08)
 
-- [ ] `AbstractModbusDevice` (connect → running → poll loop; failure marks stopped + START_FAILURE rule)
-- [ ] `StateManager`
-- [ ] `ResponseTransformer<R, V>` provider contract + `ResponseTransformerFactory`
-- [ ] `TemperatureTransformer` producing `TemperatureCelsius`
+- [x] `Polling` interface (opt-in behavior; default `startPolling()` wires a repeating `pollOnce()`; failure marks stopped + START_FAILURE rule)
+- [x] `StatefulDevice` interface (opt-in behavior; exposes `stateManager()`)
+- [x] `StateManager`
+- [x] `ResponseTransformer<R, V>` provider contract + `ResponseTransformerFactory`
+- [x] `TemperatureTransformer` producing `TemperatureCelsius`
 
 ## 5. Wiring & delivery
 
-- [ ] `META-INF/services` entries for at least one fake factory and plugin (used by tests)
-- [ ] Fake/in-memory `ModbusClient` for tests (no digitalpetri adapters yet)
-- [ ] README/docs section on the Result-based error model and value-object convention
-- [ ] GitHub Actions CI workflow running build + tests on push/PR
+- [x] `META-INF/services` entries for at least one fake factory and plugin (used by tests)
+- [x] Fake/in-memory `CommunicationClient` for tests (no digitalpetri adapters yet)
+- [x] README/docs section on the Result-based error model and value-object convention
+- [x] GitHub Actions CI workflow running build + tests on push/PR

@@ -1,0 +1,56 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+
+title Device Contract — Intent-Driven API
+
+interface Device {
+  +open(): CompletableFuture<Response<Void>>
+  +read(query: DeviceQuery): CompletableFuture<Response<DeviceState>>
+  +execute(command: DeviceCommand): CompletableFuture<Response<Void>>
+  +close(): void
+}
+note right of Device
+  The ONLY API an application author sees.
+  No protocol vocabulary, no CommunicationClient,
+  no PointAddress — just intent in, Response out.
+end note
+
+interface DeviceQuery
+note right of DeviceQuery
+  Command pattern (read side): encapsulates a read
+  request as an object. The device maps the query to
+  the required protocol operations. Examples for MVHR:
+  ReadSnapshot, ReadTemperatures, ReadAirQuality,
+  ReadAlarms. A snapshot is explicit, not an accidental
+  consequence of calling read without parameters.
+end note
+
+interface DeviceCommand
+note right of DeviceCommand
+  Command pattern (write side): encapsulates a
+  requested operation as a stand-alone object.
+  Commands are device-specific and are translated
+  by the device into protocol-level writes.
+  Examples for MVHR: SetPower, SetFanSpeed,
+  SetTemperature, ResetFilterTimer.
+end note
+
+class Response<T> {
+  +status: Status
+  +details: String
+  +value: T
+}
+
+Device ..> DeviceCommand : accepts
+Device ..> DeviceQuery : accepts
+Device ..> Response : returns
+
+note as N1
+  How Device implementations are created and
+  supplied is covered in 05 Device Plugin Factory.
+  Concrete devices (MVHR, relay, analog output)
+  are shown in 06 Example Device Extensions.
+end note
+
+@enduml

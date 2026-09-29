@@ -11,4 +11,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'modbus-abstraction-layer'
+rootProject.name = 'device-hardware-comms'

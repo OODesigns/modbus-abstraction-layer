@@ -1,0 +1,66 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+
+title Communication Client Core — Protocol-Neutral Point Model
+
+interface PointAddress<T> {
+}
+note right of PointAddress
+  Opaque handle to a single addressable
+  value of type T (e.g. Boolean, Integer,
+  Duration, a vendor-defined enum, ...).
+  Callers never inspect its contents.
+  Concrete meaning (register, coil, tag,
+  object-id, ...) is defined entirely by
+  whichever protocol adapter created it.
+end note
+
+interface PointSnapshot {
+  +<T> valueOf(point: PointAddress<T>): Response<T>
+}
+note right of PointSnapshot
+  Read result keyed by the PointAddress
+  instances that were requested.
+end note
+
+interface CommunicationClient {
+  +connect(): CompletableFuture<Response<Void>>
+  +disconnect(): void
+  +isConnected(): boolean
+  +read(points: List<PointAddress<?>>): CompletableFuture<Response<PointSnapshot>>
+  +<T> write(point: PointAddress<T>, value: T): CompletableFuture<Response<Void>>
+}
+note right of CommunicationClient
+  The ONLY communication API the rest of the
+  system sees. Devices talk in points and
+  values only — no protocol vocabulary
+  (registers, coils, tags, ...) appears here,
+  regardless of which protocol is used
+  underneath.
+end note
+
+class Response<T> {
+  +status: Status
+  +details: String
+  +value: T
+}
+
+enum Status {
+  OK
+  EXCEPTION
+}
+
+CommunicationClient ..> PointAddress : reads/writes
+CommunicationClient ..> PointSnapshot : returns from read
+CommunicationClient ..> Response : returns
+Response -- Status
+
+note bottom of CommunicationClient
+  How a CommunicationClient is created and
+  configured is covered in 02 Connection
+  Provisioning. How Modbus implements this
+  port is covered in 03 Modbus Adapter.
+end note
+
+@enduml

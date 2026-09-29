@@ -1,0 +1,70 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+
+title Modbus Adapter — First Protocol Implementation
+
+interface PointAddress<T> {
+}
+note right of PointAddress
+  Defined in 01 Communication Client Core.
+end note
+
+interface CommunicationClient {
+}
+note right of CommunicationClient
+  Defined in 01 Communication Client Core.
+end note
+
+class TransportKey {
+}
+class NetworkEndpoint {
+}
+class SerialEndpoint {
+}
+note right of TransportKey
+  TransportKey/NetworkEndpoint/SerialEndpoint
+  are defined in 02 Connection Provisioning.
+end note
+
+package "adapter: modbus" {
+  interface ModbusPointAddress<T> {
+  }
+  note bottom of ModbusPointAddress
+    Modbus-specific PointAddress implementations:
+    CoilPoint, DiscreteInputPoint,
+    HoldingRegisterPoint, InputRegisterPoint.
+    Register numbers and function codes are
+    encapsulated here — nowhere else. A vendor
+    may also define its own PointAddress<T> with
+    a non-boolean T for coil-shaped writes (e.g.
+    a tri-state on/off/toggle command, or a
+    duration-encoded timer) without changing
+    anything outside this package.
+  end note
+
+  class ModbusTransportKeys {
+    +TCP: TransportKey
+    +RTU: TransportKey
+  }
+
+  class DigitalPetriTcpClient {}
+  note bottom of DigitalPetriTcpClient
+    Adapter over a Modbus protocol library.
+    Translates PointAddress reads/writes into
+    Modbus function-code calls. Supplied as a
+    transport provider.
+  end note
+
+  class DigitalPetriRtuClient {}
+}
+
+DigitalPetriTcpClient ..|> CommunicationClient
+DigitalPetriRtuClient ..|> CommunicationClient
+DigitalPetriTcpClient ..> NetworkEndpoint : configured with
+DigitalPetriRtuClient ..> SerialEndpoint : configured with
+ModbusPointAddress ..|> PointAddress
+DigitalPetriTcpClient ..> ModbusPointAddress : resolves
+ModbusTransportKeys ..> TransportKey : provides constants for
+
+@enduml

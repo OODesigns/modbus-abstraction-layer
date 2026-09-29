@@ -1,0 +1,58 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+
+title Device Composable Behaviors — Polling & State
+
+interface Device {
+}
+note right of Device
+  Defined in 04 Device Contract.
+end note
+
+interface Polling {
+  +interval(): Duration
+  +pollOnce(): CompletableFuture<Response<Void>>
+  +startPolling(executor: ScheduledExecutorService): void
+  +stopPolling(): void
+}
+note right of Polling
+  Composable behavior, not a forced base class.
+  startPolling() is a default method that wires a
+  repeating call to pollOnce(); a device only
+  implements this if it actually polls. On failure:
+  mark stopped + record triggered rule (START_FAILURE).
+  Uses a CommunicationClient internally — never a
+  protocol-specific type (see 01 Communication
+  Client Core).
+end note
+
+interface StatefulDevice {
+  +stateManager(): StateManager
+}
+note right of StatefulDevice
+  Composable behavior for devices that track
+  operational state + triggered rules. A device
+  implements this only if it needs state tracking.
+end note
+
+class StateManager {
+  +updateState(operational: Map, triggeredRules: Map): void
+}
+
+class BlaubergMVHR {}
+note bottom of BlaubergMVHR
+  Composes only the behaviors it needs:
+  Device + Polling + StatefulDevice. A future
+  event-driven (non-polling) device would
+  implement Device (+ StatefulDevice if needed)
+  and simply skip Polling. Defined in full in
+  06 Example Device Extensions.
+end note
+
+BlaubergMVHR ..|> Device
+BlaubergMVHR ..|> Polling
+BlaubergMVHR ..|> StatefulDevice
+BlaubergMVHR -- StateManager
+
+@enduml

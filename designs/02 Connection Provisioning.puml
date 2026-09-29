@@ -1,0 +1,109 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+
+title Connection Provisioning — Discovery, Settings & Resilience
+
+interface CommunicationClient {
+}
+note right of CommunicationClient
+  Defined in 01 Communication Client Core.
+  Shown here only as the type this package
+  creates, configures and wraps.
+end note
+
+interface CommunicationClientFactory {
+  +transport(): TransportKey
+  +create(settings: ConnectionSettings): CommunicationClient
+}
+note bottom of CommunicationClientFactory
+  Provider contract for protocol/transport
+  adapters. Implementations are supplied to
+  the provider registry without changing the
+  core model.
+end note
+
+class TransportKey {
+  +id: String
+}
+note bottom of TransportKey
+  Opaque provider-catalog lookup key
+  (e.g. "modbus-tcp", "modbus-rtu",
+  "bacnet-ip", ...). The core model does
+  not enumerate known transports.
+end note
+
+class CommunicationClientRegistry {
+  -factories: Map<TransportKey, CommunicationClientFactory>
+  +get(transport: TransportKey, settings: ConnectionSettings): Response<CommunicationClient>
+}
+note bottom of CommunicationClientRegistry
+  Resolves protocol/transport providers from
+  the configured provider catalog.
+end note
+
+interface ConnectionSettings {
+}
+note bottom of ConnectionSettings
+  Marker for provider-specific connection
+  parameters. Two reusable shapes are shared
+  across protocol adapters below so a transport
+  doesn't need to reinvent them.
+end note
+
+class NetworkEndpoint {
+  +host: IPAddress
+  +port: Port
+  +timeout: Timeout
+}
+note bottom of NetworkEndpoint
+  Reusable across any IP-based adapter
+  (Modbus TCP, a future BACnet/IP, ...).
+end note
+
+class SerialEndpoint {
+  +port: SerialPortName
+  +baudRate: BaudRate
+  +timeout: Timeout
+}
+note bottom of SerialEndpoint
+  Reusable across any serial-based adapter
+  (Modbus RTU, a future DNP3-serial, ...).
+end note
+
+NetworkEndpoint ..|> ConnectionSettings
+SerialEndpoint ..|> ConnectionSettings
+
+class ConnectionManager {
+  -delegate: CommunicationClient
+  +connect(): CompletableFuture<Response<Void>>
+}
+note bottom of ConnectionManager
+  Decorator: adds retry, reconnect and
+  error-recovery behaviour around any
+  CommunicationClient, regardless of the
+  protocol underneath.
+end note
+
+class Response<T> {
+  +status: Status
+  +details: String
+  +value: T
+}
+
+CommunicationClientRegistry o-- CommunicationClientFactory : resolves from provider catalog
+CommunicationClientFactory ..> CommunicationClient : creates
+CommunicationClientFactory ..> ConnectionSettings : configured by
+CommunicationClientFactory -- TransportKey
+CommunicationClientRegistry ..> Response : returns
+ConnectionManager ..|> CommunicationClient : implements (decorator)
+ConnectionManager o-- CommunicationClient : wraps
+
+note as N1
+  See 01 Communication Client Core for
+  CommunicationClient itself, and 03 Modbus
+  Adapter for how Modbus TCP/RTU clients
+  consume NetworkEndpoint/SerialEndpoint.
+end note
+
+@enduml

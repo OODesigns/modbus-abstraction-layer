@@ -1,0 +1,57 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+
+title Response Transformers — Strategy for Typed Domain Values
+
+interface ResponseTransformer<R, V> {
+  +transform(raw: Response<R>): Response<V>
+}
+note bottom of ResponseTransformer
+  Strategy pattern: converts raw point
+  values into typed domain values.
+  New transformer providers are supplied to
+  the factory without core changes.
+end note
+
+class ResponseTransformerFactory {
+  +forSensor(type: SensorType): Response<ResponseTransformer>
+}
+
+class TemperatureTransformer {}
+class TemperatureCelsius {
+  +value: double
+}
+note right of TemperatureCelsius
+  Typed value object with range
+  validation (Low/HighTemperatureRange)
+end note
+
+class Response<T> {
+  +status: Status
+  +details: String
+  +value: T
+}
+
+note bottom of Response
+  Exception cascade is inherent to Response itself:
+  map()/flatMap() short-circuit and propagate an
+  EXCEPTION Failure unchanged. Not a separate Strategy
+  class — every transformer gets this for free by
+  building on Response.map()/flatMap(). Defined in full
+  in 01 Communication Client Core.
+end note
+
+ResponseTransformerFactory o-- ResponseTransformer : resolves from provider catalog
+TemperatureTransformer ..|> ResponseTransformer
+TemperatureTransformer ..> TemperatureCelsius : produces
+TemperatureTransformer ..> Response : builds on map/flatMap
+
+note as N1
+  Used by devices that need typed sensor
+  values, e.g. BlaubergMVHR and
+  ModbusTemperatureSensor
+  (see 06 Example Device Extensions).
+end note
+
+@enduml

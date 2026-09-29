@@ -1,0 +1,82 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+
+title Example Device Extensions — Proof the Abstraction Generalizes
+
+interface Device {
+}
+interface DevicePlugin {
+}
+note right of DevicePlugin
+  Device and DevicePlugin are defined in
+  04 Device Contract and 05 Device Plugin
+  Factory. Shown here only as the contracts
+  each extension implements.
+end note
+
+package "extension: blauberg-mvhr" {
+  class BlaubergMVHRPlugin {}
+  class BlaubergMVHR {}
+}
+note bottom of BlaubergMVHR
+  Rich sensor + actuator + alarms device.
+  Uses coils, discrete inputs and input
+  registers together (see docs/reference/
+  modbus/blauberg-mobus-table.md).
+end note
+
+package "extension: modbus-temp-sensor" {
+  class ModbusTempSensorPlugin {}
+  class ModbusTemperatureSensor {}
+}
+note bottom of ModbusTemperatureSensor
+  Pure sensor: DeviceQuery ReadTemperature
+  reads a single InputRegisterPoint and
+  transforms it via ResponseTransformer
+  (see 08 Response Transformers).
+end note
+
+package "extension: waveshare-relay" {
+  class RelayPlugin {}
+  class RelayDevice {}
+}
+note bottom of RelayDevice
+  Pure actuator: DeviceCommand SetRelay(channel, ON/OFF),
+  ToggleRelay(channel) and FlashRelayOn(channel, duration)
+  all write the same CoilPoint family with different
+  vendor-specific payload types (RelayCommand tri-state
+  sentinel, Duration) — never a plain boolean. DeviceQuery
+  ReadRelayStates reads coils back as Boolean. Proof that
+  PointAddress<T>'s generic T absorbs vendor write quirks
+  entirely inside adapter: modbus, with zero core changes.
+end note
+
+package "extension: waveshare-analog-output" {
+  class AnalogOutputPlugin {}
+  class AnalogOutputDevice {}
+}
+note bottom of AnalogOutputDevice
+  Pure actuator: DeviceCommand SetChannelOutput(channel,
+  level) writes a single HoldingRegisterPoint; DeviceQuery
+  ReadChannelOutputs reads them back. Uses only
+  HoldingRegisterPoint — never touches CoilPoint.
+end note
+
+BlaubergMVHRPlugin ..|> DevicePlugin
+BlaubergMVHRPlugin ..> BlaubergMVHR : creates
+BlaubergMVHR ..|> Device
+
+ModbusTempSensorPlugin ..|> DevicePlugin
+ModbusTempSensorPlugin ..> ModbusTemperatureSensor : creates
+ModbusTemperatureSensor ..|> Device
+
+RelayPlugin ..|> DevicePlugin
+RelayPlugin ..> RelayDevice : creates
+RelayDevice ..|> Device
+
+AnalogOutputPlugin ..|> DevicePlugin
+AnalogOutputPlugin ..> AnalogOutputDevice : creates
+AnalogOutputDevice ..|> Device
+
+@enduml
