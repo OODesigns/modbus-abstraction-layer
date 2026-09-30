@@ -14,6 +14,7 @@ PlantUML designs for a device communication abstraction layer with a **provider 
 | [`08 Response Transformers.puml`](08%20Response%20Transformers.puml) ([PNG](08%20Response%20Transformers.png)) | `ResponseTransformer` strategy for converting raw point values into typed domain values |
 | [`09 Startup Provider Registration.puml`](09%20Startup%20Provider%20Registration.puml) ([PNG](09%20Startup%20Provider%20Registration.png)) | Sequence: provider catalog populates the device and transport registries |
 | [`10 Runtime Device Creation.puml`](10%20Runtime%20Device%20Creation.puml) ([PNG](10%20Runtime%20Device%20Creation.png)) | Sequence: creating and starting a device on request |
+| [`11 MVHR Modbus Device.puml`](11%20MVHR%20Modbus%20Device.puml) ([PNG](11%20MVHR%20Modbus%20Device.png)) | MVHR plugin, profile, signal map and the shared Modbus TCP/RTU client boundary |
 
 ## Diagrams
 
@@ -57,6 +58,10 @@ PlantUML designs for a device communication abstraction layer with a **provider 
 
 ![Runtime Device Creation](10%20Runtime%20Device%20Creation.png)
 
+### 11 MVHR Modbus Device
+
+![MVHR Modbus Device](11%20MVHR%20Modbus%20Device.png)
+
 ## Key decisions
 
 - **Provider registration** is an architectural boundary. The runtime receives device, transport, and transformer providers from a provider catalog; the catalog's discovery mechanism is an implementation detail.
@@ -70,10 +75,26 @@ PlantUML designs for a device communication abstraction layer with a **provider 
 - **Device runtime behavior is composed, not inherited from one base class.** `Polling` and `StatefulDevice` are small opt-in interfaces (`Polling` provides a default `startPolling()` loop); a device implements only the ones it needs instead of extending a single do-everything abstract class — a future event-driven, non-polling device just skips `Polling`.
 - **Dependency validation**: `DevicePlugin.requiredDependencies()` is checked before creation, matching the POC `DeviceFactory` tests (not registered / missing dependency / valid).
 
+## Operating the MVHR
+
+The [MVHR control overview](../docs/reference/mvhr-control-overview.md) explains
+the S21 power, fan and weekly-temperature controls, the intended application API,
+and which parts remain design-only.
+
 ## Rendering
 
 PNGs live next to their sources in this folder (`designs/NN Name.png`) and are the rendered
 output of the matching `.puml` file — edit the `.puml`, never the `.png`.
+
+Render all diagrams from the repository root with:
+
+```bash
+tools/render-puml.sh
+```
+
+The script uses `plantuml.jar` in the repository root by default. Set `PLANTUML_JAR`
+to use a jar stored elsewhere. Install Java and Graphviz first; use PlantUML 1.2024.7
+or newer so the `spacelab` theme is available locally.
 
 Render locally with Graphviz installed and the PlantUML jar (1.2024.7 or newer, which bundles
 the `spacelab` theme so no network access is required):

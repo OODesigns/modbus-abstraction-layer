@@ -1,5 +1,5 @@
 # device-hardware-comms
-Java device hardware communication abstraction layer with a plugin architecture for defining new devices and protocol adapters (Modbus first) — design-first with PlantUML
+Protocol-neutral device communication layer with a plugin architecture for devices and transport adapters. Modbus TCP/RTU are the first protocol examples.
 
 ## Result model and value objects
 
@@ -23,5 +23,25 @@ Constructors reject invalid values immediately. APIs then accept the validated t
 Run the unit suite with:
 
 ```bash
-gradle test
+./gradlew test
+```
+
+## Convert a PDF to Markdown
+
+Create an isolated environment and install the converter dependency once:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r tools/requirements.txt
+```
+
+Run the script without arguments to choose a PDF in a file picker, or pass a
+PDF path directly. By default, the Markdown file is written beside the PDF
+with the same name and a `.md` extension. Use `-o` to choose another output
+path.
+
+```bash
+.venv/bin/python tools/pdf_to_markdown.py
+.venv/bin/python tools/pdf_to_markdown.py path/to/document.pdf
+.venv/bin/python tools/pdf_to_markdown.py path/to/document.pdf -o output/document.md
 ```

@@ -1,0 +1,2 @@
+com.oodesigns.devicecomms.adapter.modbus.ModbusTcpClientFactory
+com.oodesigns.devicecomms.adapter.modbus.ModbusRtuClientFactory

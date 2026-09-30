@@ -72,3 +72,18 @@ Tests use Mockito with `@ExtendWith(MockitoExtension.class)`. Mock all `Ports.*`
 - **Optional** chaining for null-safe flows (no null returns from public methods)
 - **Objects.requireNonNull()** in all constructors for required dependencies
 - **Final fields and parameters** everywhere - immutability by default
+
+## Typed Method Boundaries
+
+- Business and application methods accept named classes/records, validated value objects, or command/query objects; do not expose primitive, `String`, raw collection, or enum parameters in these method APIs.
+- Only constructors may accept raw primitives, strings, enums, or wire/config values. Validate and convert them immediately into immutable domain/value objects; methods, including parsing/decoding helpers, accept named classes/value objects rather than raw inputs.
+- Enums may be fields inside a command or value object, but methods receive that containing object rather than a bare enum.
+- Return domain/value objects from business methods instead of unvalidated scalar measurements. Unwrap values only at serialization, persistence, UI, or protocol boundaries.
+- Give constrained values explicit types and constructor invariants. For example, an MVHR weekly setpoint must use a 15-30 C value object, while ventilation-only is a distinct mode rather than a numeric sentinel. Test valid boundaries and rejection of invalid inputs at construction.
+
+## No-Throw Method Contract
+
+- Constructors are the only place where invalid object construction may throw (for example, `IllegalArgumentException` for an invalid value object). Validate required fields and invariants before an instance can exist.
+- Every non-constructor method returns a declared result type; do not use `void` methods or `throws` clauses in domain/application APIs. Operations with no payload return `Response<Void>` or `CompletableFuture<Response<Void>>`.
+- Methods report expected validation, state, and infrastructure failures through `Response<T>` (or `CompletableFuture<Response<T>>`) instead of throwing. Catch and normalize recoverable exceptions at adapter boundaries; do not catch JVM `Error` types.
+- Static factories and parsing methods accept typed input objects and return typed results such as `Response<T>`; they do not throw for expected invalid input. Raw external input should be captured by a boundary/config object constructor, then handed to methods as validated objects.

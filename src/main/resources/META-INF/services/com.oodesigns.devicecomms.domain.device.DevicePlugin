@@ -1,0 +1,4 @@
+com.oodesigns.devicecomms.device.blauberg.configuration.BlaubergMVHRPlugin
+com.oodesigns.devicecomms.device.waveshare.analoginput.configuration.WaveshareAnalogInput8CHPlugin
+com.oodesigns.devicecomms.device.waveshare.analogoutput.configuration.WaveshareAnalogOutput8CHPlugin
+com.oodesigns.devicecomms.device.waveshare.relay.configuration.WaveshareRelay30CHPlugin

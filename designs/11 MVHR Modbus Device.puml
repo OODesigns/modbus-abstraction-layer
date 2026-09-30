@@ -1,0 +1,264 @@
+@startuml
+'https://plantuml.com/class-diagram
+!theme spacelab
+skinparam classAttributeIconSize 0
+top to bottom direction
+
+title Blauberg S21 MVHR — Settings Access Class Diagram
+
+interface Device {
+  +open(): CompletableFuture<Response<Void>>
+  +read(query: DeviceQuery): CompletableFuture<Response<DeviceState>>
+  +execute(command: DeviceCommand): CompletableFuture<Response<Void>>
+  +close(): CompletableFuture<Response<Void>>
+}
+
+class BlaubergMVHR {
+  +read(query: DeviceQuery): CompletableFuture<Response<DeviceState>>
+  +read(query: MvhrQuery): CompletableFuture<Response<MvhrSnapshot>>
+  +execute(command: DeviceCommand): CompletableFuture<Response<Void>>
+}
+
+interface DeviceQuery
+interface DeviceCommand
+interface DeviceState
+interface MvhrQuery
+MvhrQuery --|> DeviceQuery
+note right of MvhrQuery
+  ReadSnapshot
+end note
+
+interface MvhrCommand
+MvhrCommand --|> DeviceCommand
+note right of MvhrCommand
+  Implemented:
+  SetControllerPower(command)
+  SetUnitOnOff(command)
+  SetFanMode(command)
+  SetManualFanSpeed(command)
+  SetSensorEnabled(command)
+  SetPresetAirflow(command)
+  UpdateWeeklyTemperature(command)
+  Other mapped controls are planned.
+end note
+
+class MvhrSnapshot {
+  +operation: OperationSettings
+  +fan: FanSettings
+  +climate: ClimateSettings
+  +airQuality: AirQualitySettings
+  +maintenance: MaintenanceSettings
+}
+MvhrSnapshot ..|> DeviceState
+
+class OperationSettings {
+  +controllerPower: boolean
+  +unitOn: boolean
+  +weeklyTimerEnabled: boolean
+}
+
+class FanSettings {
+  +mode: FanMode
+  +manualSpeed: FanSpeedPercent
+  +presetSupplyExtractSpeeds: Map<FanPreset, FanSpeedPair>
+  +boostAndFireplaceSpeeds: Map<SpecialMode, FanSpeedPair>
+  +supplyRpm / extractRpm: FanRpm
+  +supplyAirflow / extractAirflow: AirflowRate
+  +supplyPressure / extractPressure: DuctPressurePascal
+}
+
+class ClimateSettings {
+  +activeWeeklyTemperature: ActiveWeeklyTemperature
+  +selected/supply/outdoor temperatures: Optional<MvhrTemperatureCelsius>
+  +calculated target: Optional<SupplyAirTargetCelsius>
+}
+
+class AirQualitySettings {
+  +internalHumidity: Optional<RelativeHumidityPercent>
+  +internalCO2: Optional<CarbonDioxidePpm>
+  +internalPM2.5: Optional<Pm25Concentration>
+  +internalVOC: Optional<VocPercent>
+}
+
+class MaintenanceSettings {
+  +filterCondition: FilterCondition
+}
+
+class FanSpeedPercent <<value>> {
+  -value: int
+  0 <= value <= 100
+}
+
+class AirflowRate <<value>> {
+  -value: int
+  0 <= value <= 10000 m3/h
+}
+
+class FanRpm <<value>> {
+  -value: int
+  0 <= value <= 5000 rpm
+}
+
+class DuctPressurePascal <<value>> {
+  -value: int
+  0 <= value <= 10000 Pa
+}
+
+class RelativeHumidityPercent <<value>> {
+  -value: int
+  0 <= value <= 100 %
+}
+
+class CarbonDioxidePpm <<value>> {
+  -value: int
+  0 <= value <= 10000 ppm
+}
+
+class Pm25Concentration <<value>> {
+  -value: int
+  0 <= value <= 1000 ug/m3
+}
+
+class VocPercent <<value>> {
+  -value: int
+  0 <= value <= 100 %
+}
+
+class MvhrTemperatureCelsius <<value>> {
+  -value: double
+  -50 <= value <= 100 C
+}
+
+class WeeklyTemperatureSetpointCelsius <<value>> {
+  -value: double
+  15 <= value <= 30 C
+}
+
+class SupplyAirTargetCelsius <<value>> {
+  -value: double
+  10 <= value <= 40 C
+}
+
+enum WeeklyTemperatureMode {
+  VENTILATION_ONLY
+  SETPOINT
+}
+
+enum FanPreset {
+  STANDBY
+  SPEED_1..SPEED_5
+}
+
+enum Sensor {
+  INTERNAL_RH / EXTERNAL_RH
+  INTERNAL_CO2 / EXTERNAL_CO2
+  INTERNAL_PM25 / EXTERNAL_PM25
+  INTERNAL_VOC / EXTERNAL_VOC
+}
+
+class PresetAirflowSettings {
+  +preset: FanPreset
+  +supply / extract: AirflowRate
+}
+
+class SensorEnablement {
+  +sensor: Sensor
+  +enabled: boolean
+}
+
+class ScheduleSlot {
+  +day: ScheduleDay
+  +period: SchedulePeriodNumber
+}
+
+enum ScheduleDay
+class SchedulePeriodNumber <<value>> {
+  1 <= value <= 4
+}
+
+class S21PointMap <<logical view of private constants>> {
+  +coils: CL_POWER=0; CL_TIMER=1; CL_WEEK=2
+  +coils: CL_Boost_MODE=3 (R); CL_FPLC_MODE=4 (R)
+  +coils: RH/CO2/PM2.5/VOC controls=5..12
+  +coils: CL_BoostSWITCH_CTRL=13; CL_FplcSWITCH_CTRL=14
+  +coils: CL_FireALARM_CTRL=15; CL_10V_SENSOR_CTRL=16
+  +coils: reset filter timer / alarm=17/18
+  +discrete inputs: status=0..18; DI_AlarmCODE*=19+
+  +input registers: temperatures=0..5, 8; RH/CO2/PM2.5/VOC=10..17
+  +input registers: airflow=19/20; pressure=21/22; RPM=23/24
+  +input registers: filter timer=27; filter state=31
+  +input registers: weekly speed/temp=32/33; supply target=48
+  +holding registers: ventilation mode=0; max speed=1 (R); speed mode=2
+  +holding registers: preset fan=5..16; manual=17; boost/fireplace=19..22
+  +holding registers: preset airflow=25+; weekly schedule=126+
+}
+
+class FanMode <<value>> {
+  SPEED_1..SPEED_5 / MANUAL
+  private S21 register encoding
+}
+
+note bottom of FanSpeedPercent
+  Value-object constructors reject out-of-range or
+  non-finite values. Raw Modbus values are decoded and
+  validated at the adapter boundary.
+end note
+
+note bottom of WeeklyTemperatureSetpointCelsius
+  This MVHR-specific type accepts only 15-30 C.
+  Ventilation-only is represented separately, never as 0 C.
+  Do not reuse the generic TemperatureCelsius type here:
+  a value such as 1000 C is rejected before a write.
+end note
+
+note bottom of MvhrTemperatureCelsius
+  -50 to 100 C is an application sanity bound for sensor
+  readings, not a limit stated by the manufacturer table.
+end note
+
+note bottom of MvhrCommand
+  Enum choices and scalar values are constructor inputs
+  to command/value-object classes. Application methods
+  accept these objects, never raw numbers or bare enums.
+end note
+
+BlaubergMVHR ..|> Device
+BlaubergMVHR ..> MvhrQuery : reads
+BlaubergMVHR ..> MvhrCommand : writes
+BlaubergMVHR --> MvhrSnapshot : returns
+BlaubergMVHR ..> S21PointMap : translates named settings
+MvhrSnapshot *-- OperationSettings
+MvhrSnapshot *-- FanSettings
+MvhrSnapshot *-- ClimateSettings
+MvhrSnapshot *-- AirQualitySettings
+MvhrSnapshot *-- MaintenanceSettings
+SetPresetAirflow ..> PresetAirflowSettings
+SetSensorEnabled ..> SensorEnablement
+UpdateWeeklyTemperature ..> ScheduleSlot
+UpdateWeeklyTemperature ..> WeeklyTemperatureSetpointCelsius
+
+note bottom of BlaubergMVHR
+  Same device API for Modbus TCP or RTU.
+  Transport and endpoint are selected at creation;
+  application code uses typed queries and commands.
+  Constructors reject invalid values; methods return typed
+  CompletableFuture<Response<T>> results and normalize
+  recoverable I/O failures. Snapshot telemetry is the
+  implemented subset; see the support notes in the guide.
+end note
+
+note bottom of S21PointMap
+  Use the Blauberg Address values directly as PDU addresses.
+  CL_POWER (0) and CL_TIMER (1, Unit On/Off) are distinct.
+  The diagram highlights key settings; omitted table addresses
+  are not implied to be reserved or unsupported.
+  HR_SPEED_MODE accepts 1-5 or 255 for manual; manual
+  percentage is written separately to HR_ManualSPEED.
+  Temperature is schedule-controlled; active/calculated
+  temperature fields are read-only telemetry.
+  The point map lists additional documented S21 points;
+  only commands and snapshot fields named above are currently
+  exposed by the BlaubergMVHR implementation.
+end note
+
+@enduml
